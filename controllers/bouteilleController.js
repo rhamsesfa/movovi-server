@@ -6,7 +6,7 @@ exports.creerBouteille = async (req, res) => {
     try {
         let { bouteilleVide, bouteillePleine, estConsigne, livraison } = req.body;
         
-        console.log(bouteilleVide)
+        console.log(req.body, bouteilleVide)
 
         // Convertir les valeurs en nombres entiers
         bouteilleVide = parseInt(bouteilleVide, 10) || 0;
