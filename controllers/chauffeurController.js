@@ -4,9 +4,20 @@ const Chauffeur = require("../models/chauffeur");
 exports.creerChauffeur = async (req, res) => {
   console.log(req.body);
   try {
+    let draft = [];
+
+    // Traitement des fichiers s'ils existent
+    if (req.files && Array.isArray(req.files)) {
+      for (let file of req.files) {
+        draft.push(
+          `${req.protocol}://${req.get("host")}/images/${file.filename}`
+        );
+      }
+    }
     const nouveauChauffeur = new Chauffeur({
       ...req.body,
       date: new Date(), // Ajout correct de la date
+      photo: draft[0] || null, // Utilise la première photo si présente, sinon null
     });
 
     const chauffeur = await nouveauChauffeur.save();
