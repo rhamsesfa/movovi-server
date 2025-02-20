@@ -5,6 +5,17 @@ const Camion = require("../models/camion");
 exports.creerCamion = async (req, res) => {
   try {
     
+    let draft = [];
+
+    // Traitement des fichiers s'ils existent
+    if (req.files && Array.isArray(req.files)) {
+      for (let file of req.files) {
+        draft.push(
+          `${req.protocol}://${req.get("host")}/images/${file.filename}`
+        );
+      }
+    }
+    
 
     const userId = req.auth.userId; // ID de l'utilisateur qui ajoute
     const capacite = parseInt(req.body.capacite, 10) || 0; // Conversion de la capacité en nombre
@@ -13,7 +24,8 @@ exports.creerCamion = async (req, res) => {
       marque: req.body.marque,
       immatriculation: req.body.immatriculation,
       capacite: capacite, 
-      userId : userId
+      userId : userId,
+      photo: draft[0] || null, // Utilise la première photo si présente, sinon null
     });
 
     const camion = await nouveauCamion.save();
