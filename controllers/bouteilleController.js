@@ -7,6 +7,7 @@ exports.creerBouteille = async (req, res) => {
         let { bouteilleVide, bouteillePleine, estConsigne, livraison } = req.body;
         
         console.log(req.body, bouteilleVide)
+        const userId = req.auth.userId; // ID de l'utilisateur qui ajoute
 
         // Convertir les valeurs en nombres entiers
         bouteilleVide = parseInt(bouteilleVide, 10) || 0;
@@ -22,7 +23,8 @@ exports.creerBouteille = async (req, res) => {
                     type: 'vide',
                     estConsigne: estConsigne || false,
                     livraison: livraison || null,
-                    date: new Date()
+                    date: new Date(),
+                    userId
                 });
             }
         }
@@ -34,7 +36,8 @@ exports.creerBouteille = async (req, res) => {
                     type: 'pleine',
                     estConsigne: estConsigne || false,
                     livraison: livraison || null,
-                    date: new Date()
+                    date: new Date(),
+                    userId
                 });
             }
         }
