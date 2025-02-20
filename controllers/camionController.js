@@ -4,16 +4,7 @@ const Camion = require("../models/camion");
 // Créer un nouveau camion
 exports.creerCamion = async (req, res) => {
   try {
-    let draft = []; // Réécriture manuelle de cette ligne pour éviter les caractères invisibles
-
-    // Traitement des fichiers s'ils existent
-    if (req.files && Array.isArray(req.files)) {
-      for (let file of req.files) {
-        draft.push(
-          `${req.protocol}://${req.get("host")}/images/${file.filename}`
-        );
-      }
-    }
+    
 
     const userId = req.auth.userId; // ID de l'utilisateur qui ajoute
     const capacite = parseInt(req.body.capacite, 10) || 0; // Conversion de la capacité en nombre
@@ -21,9 +12,8 @@ exports.creerCamion = async (req, res) => {
     const nouveauCamion = new Camion({
       marque: req.body.marque,
       immatriculation: req.body.immatriculation,
-      capacite: capacite,
-      photo: draft[0] || null, 
-      userId 
+      capacite: capacite, 
+      userId : userId
     });
 
     const camion = await nouveauCamion.save();
@@ -99,8 +89,4 @@ exports.supprimerCamion = async (req, res) => {
     res.status(500).json({ error: "Erreur lors de la suppression du camion" });
   }
 };
- res.status(200).json({ message: 'Camion supprimé avec succès' });
-    } catch (error) {
-        res.status(500).json({ error: 'Erreur lors de la suppression du camion' });
-    }
-};
+
