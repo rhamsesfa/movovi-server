@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const camionController = require('../controllers/camionController');
 const auth = require("../middleware/auth");
+const multer2 = require("../middleware/multer-configs2");  
 
 // Route pour créer un camion
-router.post('/', auth, camionController.creerCamion);
+router.post('/', auth, multer2, camionController.creerCamion);
 
 // Route pour récupérer tous les camions
 router.get('/', auth, camionController.listerCamions);

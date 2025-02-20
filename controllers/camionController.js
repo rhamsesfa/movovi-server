@@ -3,6 +3,7 @@ const Camion = require('../models/camion');
 // Créer un nouveau camion
 exports.creerCamion = async (req, res) => {
     try {
+        console.log(req.body)
         const nouveauCamion = new Camion(req.body);
         const camion = await nouveauCamion.save();
         res.status(201).json(camion);
