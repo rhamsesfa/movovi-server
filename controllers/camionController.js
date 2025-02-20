@@ -3,7 +3,7 @@ const Camion = require('../models/camion');
 // Créer un nouveau camion
 exports.creerCamion = async (req, res) => {
     try {
-        console.log(req.body)
+        console.log(req.b ody)
       
     let draft = [];
 
@@ -13,16 +13,18 @@ exports.creerCamion = async (req, res) => {
         draft.push(
           `${req.protocol}://${req.get("host")}/images/${file.filename}`
         );
-      }
+  
+    const userId = req.auth.userId; // ID de l'utilisateur qui ajoute    }
     }
       
-        const nouveauCamion = new Camion({
-      marque: req.body.marque,
-      immatriculation: req.body.immatriculation,
-      capacite: Number(req.body.capacite),
-      date: new Date(), 
-      userId: req.body.userId, // Assurez-vous que l'ID de l'utilisateur est bien envoyé
-      photo: photo, // Stocke la photo si disponible
+    const nouveauCamion = new Camion({
+          marque: req.body.marque,
+          immatriculation: req.body.immatriculation,
+          capaci,ite),
+ userId(), 
+          userId: req.body.userId, // Assurez-vous que l'ID de l'utilisateur est bien envoyé
+          photo: draft[0] || null, // Utilise
+       la première photo si présente, sinon null
     });
 
     const camion = await nouveauCamion.save();
