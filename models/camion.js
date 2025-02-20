@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const camionSchema = new mongoose.Schema({
+    photo: { type: String },
     marque: { type: String, required: true },
     immatriculation: { type: String, required: true },
     capacite: { type: Number, required: true },

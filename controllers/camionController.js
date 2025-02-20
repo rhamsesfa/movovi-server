@@ -5,9 +5,28 @@ exports.creerCamion = async (req, res) => {
     try {
         console.log(req.body)
       
-        const nouveauCamion = new Camion(req.body);
-        const camion = await nouveauCamion.save();
-        res.status(201).json(camion);
+    let draft = [];
+
+    // Traitement des fichiers s'ils existent
+    if (req.files && Array.isArray(req.files)) {
+      for (let file of req.files) {
+        draft.push(
+          `${req.protocol}://${req.get("host")}/images/${file.filename}`
+        );
+      }
+    }
+      
+        const nouveauCamion = new Camion({
+      marque: req.body.marque,
+      immatriculation: req.body.immatriculation,
+      capacite: Number(req.body.capacite),
+      date: new Date(), 
+      userId: req.body.userId, // Assurez-vous que l'ID de l'utilisateur est bien envoyé
+      photo: photo, // Stocke la photo si disponible
+    });
+
+    const camion = await nouveauCamion.save();
+    res.status(201).json(camion);
     } catch (error) {
         res.status(500).json({ error: 'Erreur lors de la création du camion' });
     }
