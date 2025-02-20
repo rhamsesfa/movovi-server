@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const camionSchema = new mongoose.Schema({
+    marque: { type: String, required: true },
     immatriculation: { type: String, required: true },
     capacite: { type: Number, required: true },
     livraisons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Livraison' }],
