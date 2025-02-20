@@ -2,6 +2,7 @@ const Chauffeur = require('../models/chauffeur');
 
 // Créer un nouveau chauffeur
 exports.creerChauffeur = async (req, res) => {
+  console.log(req.body)
     try {
         const nouveauChauffeur = new Chauffeur(req.body);
         const chauffeur = await nouveauChauffeur.save();
