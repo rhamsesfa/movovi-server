@@ -4,12 +4,19 @@ const Bouteille = require('../models/bouteille');
 // Créer plusieurs bouteilles en fonction du nombre de bouteilles vides et pleines
 exports.creerBouteille = async (req, res) => {
     try {
-        const { bouteilleVide, bouteillePleine, estConsigne, livraison } = req.body;
+        let { bouteilleVide, bouteillePleine, estConsigne, livraison } = req.body;
+        
+        console.log(bouteilleVide)
+
+        // Convertir les valeurs en nombres entiers
+        bouteilleVide = parseInt(bouteilleVide, 10) || 0;
+        bouteillePleine = parseInt(bouteillePleine, 10) || 0;
 
         let bouteilles = [];
+        console.log(bouteilleVide)
 
         // Ajouter les bouteilles vides
-        if (bouteilleVide && bouteilleVide > 0) {
+        if (bouteilleVide > 0) {
             for (let i = 0; i < bouteilleVide; i++) {
                 bouteilles.push({
                     type: 'vide',
@@ -21,7 +28,7 @@ exports.creerBouteille = async (req, res) => {
         }
 
         // Ajouter les bouteilles pleines
-        if (bouteillePleine && bouteillePleine > 0) {
+        if (bouteillePleine > 0) {
             for (let i = 0; i < bouteillePleine; i++) {
                 bouteilles.push({
                     type: 'pleine',
@@ -49,6 +56,7 @@ exports.creerBouteille = async (req, res) => {
         res.status(500).json({ error: 'Erreur lors de la création des bouteilles' });
     }
 };
+
 
 // Lister toutes les bouteilles
 exports.listerBouteilles = async (req, res) => {
