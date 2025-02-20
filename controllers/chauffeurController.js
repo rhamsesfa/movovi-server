@@ -5,7 +5,8 @@ exports.creerChauffeur = async (req, res) => {
   console.log(req.body)
     try {
         const nouveauChauffeur = new Chauffeur(req.body);
-        const chauffeur = await nouveauChauffeur.save();
+        const chauff = {...nouveauChauffeur, date: new Date()}
+        const chauffeur = await chauff.save();
         res.status(201).json(chauffeur);
     } catch (error) {
         res.status(500).json({ error: 'Erreur lors de la création du chauffeur' });
