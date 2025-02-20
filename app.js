@@ -24,7 +24,7 @@ mongoose.connect("mongodb+srv://rhamses:Appo1993@cluster0.vm5ux.mongodb.net/?ret
   { useNewUrlParser: true,
     useUnifiedTopology: true, autoIndex: true })
   .then(() => console.log('Connexion à MongoDB réussie !'))
-  .catch((err) => console.log('Connexion à MongoDB échouée !', err)
+  .catch((err) => console.log('Connexion à MongoDB échouée!', err)
 );
 
 
