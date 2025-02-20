@@ -20,7 +20,7 @@ app.use((req, res, next) => {
     next();
 });
 
-mongoose.connect("mongodb+srv://rhamses:Appo1993@rhamses.vm5ux.mongodb.net/?retryWrites=true&w=majority&appName=rhamses",
+mongoose.connect("mongodb+srv://rhamses:Appo1993@cluster0.vm5ux.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
   { useNewUrlParser: true,
     useUnifiedTopology: true, autoIndex: true })
   .then(() => console.log('Connexion à MongoDB réussie !'))
