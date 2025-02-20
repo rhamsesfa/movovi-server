@@ -9,7 +9,9 @@ exports.creerCamion = async (req, res) => {
     // Traitement des fichiers s'ils existent
     if (req.files && Array.isArray(req.files)) {
       for (let file of req.files) {
-        draft.push(`${req.protocol}://${req.get("host")}/images/${file.filename}`);
+        draft.push(
+          `${req.protocol}://${req.get("host")}/images/${file.filename}`
+        );
       }
     }
 
@@ -20,18 +22,17 @@ exports.creerCamion = async (req, res) => {
       marque: req.body.marque,
       immatriculation: req.body.immatriculation,
       capacite: capacite,
-      photo: draft[0] || null, // Utilise la première photo si présente, sinon null
-      userId, // Assurez-vous que l'ID de l'utilisateur est bien envoyé
+      photo: draft[0] || null, 
+      userId 
     });
 
     const camion = await nouveauCamion.save();
     res.status(201).json(camion);
   } catch (error) {
-    console.error(error); // Log l'erreur pour le débogage
+    //console.error(error); // Log l'erreur pour le débogage
     res.status(500).json({ error: "Erreur lors de la création du camion" });
   }
 };
-
 
 // Lister tous les camions
 exports.listerCamions = async (req, res) => {
