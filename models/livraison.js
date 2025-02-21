@@ -6,7 +6,8 @@ const livraisonSchema = new mongoose.Schema({
     bouteillesDepart: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bouteille' }],
     bouteillesRetour: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bouteille' }],
     bouteillesConsignes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Bouteille' }],
-    date: { type: Date, default: Date.now }
+    dateAller: { type: Date, default: Date.now },
+    dateRetour: { type: Date, default: null }
 });
 
 module.exports = mongoose.model('Livraison', livraisonSchema);
