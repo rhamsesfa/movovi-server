@@ -3,103 +3,80 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const nodemailer = require("nodemailer");
 
-
 exports.changeName = async (req, res) => {
-  
-    try{
-      
-      await User.updateOne({_id: req.auth.userId}, {$set: {name: req.body.name}}); 
-      
-      res.status(200).json({status: 0})
-      
-    }catch(err){
-      
-        console.log(err); 
-        res.status(505).json({err})
-    }
-}
+  try {
+    await User.updateOne(
+      { _id: req.auth.userId },
+      { $set: { name: req.body.name } }
+    );
+
+    res.status(200).json({ status: 0 });
+  } catch (err) {
+    console.log(err);
+    res.status(505).json({ err });
+  }
+};
 
 exports.changePhoto = async (req, res) => {
-  
-    try{
-      
-      
-      
-      const file = req.files[0]; 
-      const photo = `${req.protocol}s://${req.get("host")}/images/${file.filename}`
-      
-      await User.updateOne({_id: req.auth.userId}, {$set: {photo}})
-      
-     res.status(200).json({status: 0, photo});
-      
-    }catch(err){
-      
-        console.log(err); 
-        res.status(505).json({err})
+  try {
+    const file = req.files[0];
+    const photo = `${req.protocol}s://${req.get("host")}/images/${
+      file.filename
+    }`;
+
+    await User.updateOne({ _id: req.auth.userId }, { $set: { photo } });
+
+    res.status(200).json({ status: 0, photo });
+  } catch (err) {
+    console.log(err);
+    res.status(505).json({ err });
+  }
+};
+
+exports.updateFcmToken = async (req, res) => {
+  console.log("On est prêt");
+
+  try {
+    const { fcmToken, deviceId } = req.body;
+
+    const userId = req.auth.userId;
+
+    const user = await User.findOne({ _id: userId });
+
+    const tokens =
+      user.fcmToken && user.fcmToken.length > 0 ? user.fcmToken : [];
+
+    const value = tokens.filter(
+      (item) => item.fcmToken === fcmToken && item.deviceId === deviceId
+    );
+
+    let newToken;
+
+    if (tokens.length === 0) {
+      newToken = { deviceId, fcmToken };
+      tokens.push(newToken);
+    } else {
+      //if(value[0].fcmToken)
+
+      const leToken = tokens.find((item) => item.deviceId === deviceId);
+
+      if (leToken && leToken.fcmToken !== fcmToken) {
+        leToken.fcmToken = fcmToken;
+      }
     }
-    
-}
 
+    await User.updateOne({ _id: userId }, { $set: { fcmToken: tokens } });
 
- exports.updateFcmToken = async (req, res) => {
-  
-  console.log("On est prêt")
-   
-   try{
-     
-      const {fcmToken, deviceId} = req.body; 
-   
-      const userId = req.auth.userId; 
-     
-       const user = await User.findOne({_id: userId}); 
-     
-       const tokens = user.fcmToken && user.fcmToken.length > 0 ? user.fcmToken : []; 
-     
-       const value = tokens.filter(item => (item.fcmToken === fcmToken && item.deviceId === deviceId)); 
-     
-       
-     
-       let newToken; 
-     
-     
-       if(tokens.length === 0){
-         
-         newToken = {deviceId, fcmToken}; 
-         tokens.push(newToken);
-         
-         
-       }else{
-         
-           //if(value[0].fcmToken)
-         
-           const leToken = tokens.find(item => item.deviceId === deviceId); 
-         
-           if(leToken && leToken.fcmToken !== fcmToken){
-             
-               leToken.fcmToken = fcmToken;
-           }
-         
-         
-         }
-     
-       await User.updateOne({_id: userId}, {$set: {fcmToken: tokens}}); 
-     
-       user.fcmToken = tokens; 
-     
-       res.status(200).json({status: 0, message: "Mise à jour effectuée avec succès", user});
-   
-     
-     
-   }catch(err){
-     
-       console.log(err); 
-       res.status(505).json({err})
-   }
-  
-}
- 
- 
- 
+    user.fcmToken = tokens;
+
+    res
+      .status(200)
+      .json({ status: 0, message: "Mise à jour effectuée avec succès", user });
+  } catch (err) {
+    console.log(err);
+    res.status(505).json({ err });
+  }
+};
 
 const genererCode = () => {
   var code = "";
@@ -267,7 +244,7 @@ exports.signInWithGoogleAdmin = (req, res) => {
             message: "Accès non autorisé pour ce rôle.",
           });
         }
-        
+
         // Vérifier si l'utilisateur est bloqué
         if (user.locked) {
           return res.status(401).json({
@@ -450,10 +427,9 @@ exports.signUp = (req, res) => {
 };
 
 exports.changePassword = (req, res) => {
-  
-                console.log("Le new pass", req.body.newPass);
-              console.log("last", req.body.last);
-  
+  console.log("Le new pass", req.body.newPass);
+  console.log("last", req.body.last);
+
   User.findOne({ _id: req.auth.userId }).then(
     (user) => {
       if (!user) {
@@ -461,9 +437,7 @@ exports.changePassword = (req, res) => {
           status: 1,
           message: "Utilisateur non trouvé",
         });
-      }
-      else {
-        
+      } else {
         // Vérifier si l'utilisateur est bloqué
         if (user.locked) {
           return res.status(200).json({
@@ -479,12 +453,12 @@ exports.changePassword = (req, res) => {
                 message: "Ancien mot de passe incorrect",
               });
             } else {
- 
+              const hash = await bcrypt.hash(req.body.newPass, 10);
 
-              
-            const hash =   await  bcrypt.hash(req.body.newPass, 10); 
-              
-              await User.updateOne({_id: user._id}, {$set: {password: hash}})
+              await User.updateOne(
+                { _id: user._id },
+                { $set: { password: hash } }
+              );
 
               res.status(200).json({
                 status: 0,
@@ -513,9 +487,7 @@ exports.signIn = (req, res) => {
           status: 1,
           message: "Utilisateur et/ou mot de passe incorrect",
         });
-      }
-      else {
-        
+      } else {
         // Vérifier si l'utilisateur est bloqué
         if (user.locked) {
           return res.status(200).json({
@@ -571,12 +543,11 @@ exports.signInAdmin = (req, res) => {
             message: "Utilisateur non trouvé ou non autorisé.",
           });
         }
-        if(user.locked){
+        if (user.locked) {
           return res.status(401).json({
             status: 1,
             message: "Utilisateur bloqué.",
           });
-          
         }
 
         // Vérification du rôle de l'utilisateur
@@ -812,7 +783,7 @@ exports.addUser = async (req, res) => {
       });
     }
 
-      // Hash du mot de passe
+    // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Créer un nouvel utilisateur
