@@ -532,6 +532,7 @@ exports.signIn = (req, res) => {
 };
 
 exports.signInAdmin = (req, res) => {
+  console.log(req)
   // Vérification du type de connexion
   if (req.body.typeconnexion && req.body.typeconnexion === "admin") {
     User.findOne({ email: req.body.email }).then(
