@@ -265,7 +265,7 @@ exports.signInWithGoogleAdmin = (req, res) => {
         });
       } else {
         // Si typeconnexion est "admin" et l'utilisateur n'existe pas
-        if (req.body.typeconnexion === "admin") {
+        if (req.body.typeconnexion !== "admin") {
           return res.status(401).json({
             status: 0,
             message: "Utilisateur non autorisé.",
