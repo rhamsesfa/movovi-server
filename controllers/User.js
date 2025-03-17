@@ -328,6 +328,7 @@ exports.signUpp = (req, res) => {
           const newUser = User({
             email: req.body.email,
             name: req.body.name,
+            typeconnexion : 'admin',
             password: hash,
             date: new Date(),
           });
