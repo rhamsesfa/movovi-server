@@ -84,7 +84,7 @@ exports.supprimerTraduction = async (req, res) => {
 // Récupérer les traductions pour une langue spécifique
 exports.obtenirTraductionsParLangue = async (req, res) => {
   try {
-    const { langue } = req.params;
+    const { langue } = req.body;
     const traductions = await Translation.find({}, { french: 1, [`translations.${langue}`]: 1, [`audioUrls.${langue}`]: 1 });
 
     res.status(200).json(traductions);
