@@ -92,14 +92,15 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
 
     // Rechercher la traduction dans la base de données en fonction du mot en français
     const traduction = await Translation.findOne({ french });
+    console.log(traduction)
 
     if (!traduction) {
       return res.status(404).json({ error: "Traduction non trouvée pour le mot spécifié" });
     }
 
     // Extraire la traduction et l'URL audio pour la langue spécifiée
-    const traductionLangue = traduction.translations[langue];
-    const audioUrlLangue = traduction.audioUrls[langue];
+    const traductionLangue = traduction.translations.get(langue);
+    const audioUrlLangue = traduction.audioUrls.get(langue);
 
     if (!traductionLangue) {
       return res.status(404).json({ error: `Aucune traduction trouvée pour la langue ${langue}` });
