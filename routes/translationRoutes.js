@@ -10,6 +10,6 @@ router.get('/', auth, translationController.listerTraductions);
 router.get('/:id', auth, translationController.obtenirTraductionParId);
 router.put('/:id', auth, translationController.mettreAJourTraduction);
 router.delete('/:id', auth, translationController.supprimerTraduction);
-router.get('/langue/:langue', auth, translationController.obtenirTraductionsParLangue);
+router.post('/langue/:langue', translationController.obtenirTraductionsParLangue);
 
 module.exports = router;
