@@ -81,14 +81,38 @@ exports.supprimerTraduction = async (req, res) => {
     res.status(500).json({ error: "Erreur lors de la suppression de la traduction" });
   }
 };
-// Récupérer les traductions pour une langue spécifique
+// Récupérer les traductions pour un mot en français et une langue spécifique
 exports.obtenirTraductionsParLangue = async (req, res) => {
   try {
-    const { langue } = req.body;
-    const traductions = await Translation.find({}, { french: 1, [`translations.${langue}`]: 1, [`audioUrls.${langue}`]: 1 });
+    const { french, langue } = req.body; // Récupérer le mot en français et la langue depuis le corps de la requête
 
-    res.status(200).json(traductions);
+    if (!french || !langue) {
+      return res.status(400).json({ error: "Le mot en français et la langue sont requis" });
+    }
+
+    // Rechercher la traduction dans la base de données en fonction du mot en français
+    const traduction = await Translation.findOne({ french });
+
+    if (!traduction) {
+      return res.status(404).json({ error: "Traduction non trouvée pour le mot spécifié" });
+    }
+
+    // Extraire la traduction et l'URL audio pour la langue spécifiée
+    const traductionLangue = traduction.translations[langue];
+    const audioUrlLangue = traduction.audioUrls[langue];
+
+    if (!traductionLangue) {
+      return res.status(404).json({ error: `Aucune traduction trouvée pour la langue ${langue}` });
+    }
+
+    // Renvoyer la réponse avec les données nécessaires
+    res.status(200).json({
+      french: traduction.french,
+      translation: traductionLangue,
+      audioUrl: audioUrlLangue,
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Erreur lors de la récupération des traductions pour la langue spécifiée" });
   }
 };
