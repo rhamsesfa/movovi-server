@@ -34,12 +34,14 @@ const livraisonRoutes = require('./routes/livraisonRoutes');
 const bouteilleRoutes = require('./routes/bouteilleRoutes');
 const camionRoutes = require('./routes/camionRoutes');
 const chauffeurRoutes = require('./routes/chauffeurRoutes');
+const translationRoutes = require('./routes/translationRoutes');
 
 // Routes
 app.use('/api/livraisons', livraisonRoutes);
 app.use('/api/bouteilles', bouteilleRoutes);
 app.use('/api/camions', camionRoutes);
 app.use('/api/chauffeurs', chauffeurRoutes);
+app.use('/api/translation', translationRoutes);
 
 
 app.use("/api/user", userRouter);
