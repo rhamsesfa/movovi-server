@@ -1,4 +1,4 @@
-const Translation = require("../models/Translation");
+const Translation = require("../models/translation");
 
 // Créer une nouvelle traduction
 exports.creerTraduction = async (req, res) => {
