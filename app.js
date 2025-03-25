@@ -9,7 +9,15 @@ const app = express();
 app.use(cors());
 
 app.use(express.json({limit: "50mb"})); 
+// Ajoutez ce middleware avant les routes
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Serve static files
+app.use('/audios', express.static(path.join(__dirname, 'audios'), (err, req, res, next) => {
+    console.error('Erreur accès fichier statique:', err);
+    next();
+});
 
 
 app.use((req, res, next) => {
@@ -36,8 +44,7 @@ const camionRoutes = require('./routes/camionRoutes');
 const chauffeurRoutes = require('./routes/chauffeurRoutes');
 const translationRoutes = require('./routes/translationRoutes');
 
-// Ajoutez cette ligne avec les autres app.use() statiques
-app.use("/audios", express.static(path.join(__dirname, "audios")));
+
 
 // Routes
 app.use('/api/livraisons', livraisonRoutes);
