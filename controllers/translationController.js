@@ -7,15 +7,18 @@ exports.creerTraduction = async (req, res) => {
         const { french, translations } = req.body;
         const parsedTranslations = JSON.parse(translations);
         const lang = Object.keys(parsedTranslations)[0];
-        const translationText = parsedTranslations[lang];
+        const translationText = parsedTranslations[lang].toLowerCase(); // Conversion en minuscules ici
 
         // Vérifier que la traduction est bien une string
         if (typeof translationText !== 'string') {
             return res.status(400).json({ error: "La traduction doit être une chaîne de caractères" });
         }
 
+        // Convertir aussi le français en minuscules pour la cohérence
+        const frenchLower = french.toLowerCase();
+
         // 1. Vérifier si le mot français existe déjà
-        const existingTranslation = await Translation.findOne({ french });
+        const existingTranslation = await Translation.findOne({ french: frenchLower });
 
         if (existingTranslation) {
             // 2. Vérifier si la traduction existe déjà pour cette langue
@@ -44,8 +47,8 @@ exports.creerTraduction = async (req, res) => {
         } else {
             // 4. Créer une nouvelle entrée
             const nouvelleTraduction = new Translation({
-                french,
-                translations: parsedTranslations,
+                french: frenchLower, // Stockage en minuscules
+                translations: { [lang]: translationText }, // Déjà en minuscules
                 audioUrls: { [lang]: req.audioUrl }
             });
 
