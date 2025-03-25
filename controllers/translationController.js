@@ -7,25 +7,59 @@ exports.creerTraduction = async (req, res) => {
         const { french, translations } = req.body;
         const parsedTranslations = JSON.parse(translations);
         const lang = Object.keys(parsedTranslations)[0];
-        
+        const translationText = parsedTranslations[lang];
+
         // Vérifier que la traduction est bien une string
-        if (typeof parsedTranslations[lang] !== 'string') {
-            throw new Error('La traduction doit être une chaîne de caractères');
+        if (typeof translationText !== 'string') {
+            return res.status(400).json({ error: "La traduction doit être une chaîne de caractères" });
         }
 
-        const nouvelleTraduction = new Translation({
-            french,
-            translations: parsedTranslations, // Doit être un objet simple {lang: "traduction"}
-            audioUrls: { [lang]: req.audioUrl }
-        });
+        // 1. Vérifier si le mot français existe déjà
+        const existingTranslation = await Translation.findOne({ french });
 
-        await nouvelleTraduction.save();
-        res.status(201).json(nouvelleTraduction);
+        if (existingTranslation) {
+            // 2. Vérifier si la traduction existe déjà pour cette langue
+            if (existingTranslation.translations.get(lang)) {
+                return res.status(409).json({ 
+                    message: "Traduction existante",
+                    existing: {
+                        french: existingTranslation.french,
+                        translation: existingTranslation.translations.get(lang),
+                        audioUrl: existingTranslation.audioUrls.get(lang)
+                    }
+                });
+            } else {
+                // 3. Ajouter la nouvelle traduction à l'entrée existante
+                existingTranslation.translations.set(lang, translationText);
+                if (req.audioUrl) {
+                    existingTranslation.audioUrls.set(lang, req.audioUrl);
+                }
+                
+                await existingTranslation.save();
+                return res.status(200).json({
+                    message: "Traduction ajoutée à l'entrée existante",
+                    translation: existingTranslation
+                });
+            }
+        } else {
+            // 4. Créer une nouvelle entrée
+            const nouvelleTraduction = new Translation({
+                french,
+                translations: parsedTranslations,
+                audioUrls: { [lang]: req.audioUrl }
+            });
+
+            await nouvelleTraduction.save();
+            return res.status(201).json({
+                message: "Nouvelle traduction créée",
+                translation: nouvelleTraduction
+            });
+        }
         
     } catch (error) {
         console.error(error);
         res.status(500).json({ 
-            error: "Erreur lors de la création",
+            error: "Erreur lors de la création/mise à jour",
             details: error.message 
         });
     }
