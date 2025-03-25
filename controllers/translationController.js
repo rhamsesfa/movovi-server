@@ -129,38 +129,68 @@ exports.supprimerTraduction = async (req, res) => {
   }
 };
 // Récupérer les traductions pour un mot en français et une langue spécifique
+// Récupérer les traductions pour un mot en français et une langue spécifique
 exports.obtenirTraductionsParLangue = async (req, res) => {
   try {
-    const { french, langue } = req.body; // Récupérer le mot en français et la langue depuis le corps de la requête
+    const { french, langue } = req.body;
 
     if (!french || !langue) {
       return res.status(400).json({ error: "Le mot en français et la langue sont requis" });
     }
 
-    // Rechercher la traduction dans la base de données en fonction du mot en français
-    const traduction = await Translation.findOne({ french });
-    console.log(traduction)
+    // Normaliser en minuscules et supprimer les espaces
+    const frenchLower = french.toLowerCase().trim();
+    const langueLower = langue.toLowerCase().trim();
+
+    // Recherche insensible à la casse
+    const traduction = await Translation.findOne({ 
+      french: { $regex: new RegExp(`^${frenchLower}$`, 'i') }
+    });
 
     if (!traduction) {
-      return res.status(404).json({ error: "Traduction non trouvée pour le mot spécifié" });
+      return res.status(404).json({ 
+        error: `Aucune traduction trouvée pour "${french}"`,
+        suggestion: `Essayez avec "${frenchLower}"` 
+      });
     }
 
-    // Extraire la traduction et l'URL audio pour la langue spécifiée
-    const traductionLangue = traduction.translations.get(langue);
-    const audioUrlLangue = traduction.audioUrls.get(langue);
+    // Recherche de la traduction dans la langue spécifiée (insensible à la casse)
+    let traductionLangue, audioUrlLangue;
+    
+    // Parcourir les clés du Map pour trouver une correspondance insensible à la casse
+    for (const [key, value] of traduction.translations) {
+      if (key.toLowerCase() === langueLower) {
+        traductionLangue = value;
+        audioUrlLangue = traduction.audioUrls.get(key); // Garde la clé originale
+        break;
+      }
+    }
 
     if (!traductionLangue) {
-      return res.status(404).json({ error: `Aucune traduction trouvée pour la langue ${langue}` });
+      const availableLanguages = Array.from(traduction.translations.keys()).join(', ');
+      return res.status(404).json({ 
+        error: `Aucune traduction trouvée pour la langue "${langue}"`,
+        availableLanguages,
+        suggestion: `Langues disponibles: ${availableLanguages}` 
+      });
     }
 
-    // Renvoyer la réponse avec les données nécessaires
+    // Renvoyer les données avec la casse originale stockée
     res.status(200).json({
-      french: traduction.french,
+      french: traduction.french, // Conserve la casse originale du stockage
       translation: traductionLangue,
       audioUrl: audioUrlLangue,
+      normalized: {
+        french: frenchLower,
+        language: langueLower
+      }
     });
+
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Erreur lors de la récupération des traductions pour la langue spécifiée" });
+    res.status(500).json({ 
+      error: "Erreur lors de la récupération",
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
