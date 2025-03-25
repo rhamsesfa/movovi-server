@@ -1,20 +1,29 @@
 const Translation = require("../models/translation");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 
-// Créer une nouvelle traduction
+// Modifier pour accepter FormData
 exports.creerTraduction = async (req, res) => {
   try {
-    const { french, translations, audioUrls } = req.body;
-    console.log(req.body)
+    const { french, translations } = req.body;
+    const parsedTranslations = JSON.parse(translations);
+    
+    let audioUrls = {};
+    if (req.file) {
+      // Traiter le fichier audio ici
+      audioUrls[Object.keys(parsedTranslations)[0]] = `/audios/${req.file.filename}`;
+    }
 
     const nouvelleTraduction = new Translation({
       french,
-      translations,
-      audioUrls,
+      translations: parsedTranslations,
+      audioUrls
     });
 
     const traduction = await nouvelleTraduction.save();
     res.status(201).json(traduction);
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: "Erreur lors de la création de la traduction" });
   }
 };
