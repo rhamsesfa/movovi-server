@@ -4,6 +4,7 @@ const Translation = require("../models/translation");
 exports.creerTraduction = async (req, res) => {
   try {
     const { french, translations, audioUrls } = req.body;
+    console.log(req.body)
 
     const nouvelleTraduction = new Translation({
       french,
