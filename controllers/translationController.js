@@ -3,31 +3,35 @@ const path = require("path");
 
 exports.creerTraduction = async (req, res) => {
     try {
-        const { french, translations } = req.body;
-        let audioUrls = {};
-
-        if (req.file) {
-            const lang = Object.keys(JSON.parse(translations))[0];
-            audioUrls[lang] = `/audios/${req.file.filename}`;
+        const { french, translations, langue } = req.body;
+        
+        if (!req.file) {
+            return res.status(400).json({ error: "Aucun fichier audio fourni" });
         }
+
+        const audioUrl = `/audios/${req.file.filename}`;
+        const parsedTranslations = JSON.parse(translations);
 
         const nouvelleTraduction = new Translation({
             french,
-            translations: JSON.parse(translations),
-            audioUrls
+            translations: parsedTranslations,
+            audioUrls: { [langue]: audioUrl }
         });
 
         const traduction = await nouvelleTraduction.save();
         
         res.status(201).json({
-            ...traduction._doc,
-            audioUrl: audioUrls[Object.keys(audioUrls)[0]] || null
+            message: "Traduction et audio enregistrés avec succès",
+            traduction,
+            audioUrl
         });
+
     } catch (error) {
-        console.error(error);
+        console.error("Erreur complète:", error);
         res.status(500).json({ 
-            error: "Erreur lors de la création de la traduction",
-            details: error.message 
+            error: "Erreur serveur",
+            details: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 };

@@ -1,9 +1,11 @@
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 
-// Créer le dossier audios s'il n'existe pas
+// Chemin absolu vers le dossier audios
 const audioDir = path.join(__dirname, '../audios');
-const fs = require('fs');
+
+// Créer le dossier s'il n'existe pas
 if (!fs.existsSync(audioDir)) {
     fs.mkdirSync(audioDir, { recursive: true });
 }
@@ -13,7 +15,7 @@ const MIME_TYPES = {
     "audio/wav": "wav",
     "audio/ogg": "ogg",
     "audio/mp4": "mp4",
-    "audio/aac": "aac",
+    "audio/aac": "aac"
 };
 
 const storage = multer.diskStorage({
@@ -21,24 +23,22 @@ const storage = multer.diskStorage({
         cb(null, audioDir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = MIME_TYPES[file.mimetype] || 'audio';
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + extension);
+        const lang = req.body.langue || 'unknown';
+        const uniqueName = `${lang}_${Date.now()}.${MIME_TYPES[file.mimetype]}`;
+        cb(null, uniqueName);
     }
 });
 
-const fileFilter = (req, file, cb) => {
-    if (MIME_TYPES[file.mimetype]) {
-        cb(null, true);
-    } else {
-        cb(new Error('Type de fichier audio non supporté'), false);
-    }
-};
-
 module.exports = multer({
     storage: storage,
-    fileFilter: fileFilter,
+    fileFilter: (req, file, cb) => {
+        if (MIME_TYPES[file.mimetype]) {
+            cb(null, true);
+        } else {
+            cb(new Error("Type de fichier audio non supporté"), false);
+        }
+    },
     limits: {
-        fileSize: 1024 * 1024 * 5 // 5MB max
+        fileSize: 10 * 1024 * 1024 // 10MB max
     }
 }).single("audio");
