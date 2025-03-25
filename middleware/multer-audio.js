@@ -100,7 +100,7 @@ module.exports = (req, res, next) => {
         }
 
         // Préparer l'URL audio pour le contrôleur
-        req.audioUrl = `/audios/${req.file.filename}`;
+        req.audioUrl = `https://gaz-owendo.glitch.me/audios/${req.file.filename}`;
         next();
     });
 };
