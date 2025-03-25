@@ -36,6 +36,9 @@ const camionRoutes = require('./routes/camionRoutes');
 const chauffeurRoutes = require('./routes/chauffeurRoutes');
 const translationRoutes = require('./routes/translationRoutes');
 
+// Ajoutez cette ligne avec les autres app.use() statiques
+app.use("/audios", express.static(path.join(__dirname, "audios")));
+
 // Routes
 app.use('/api/livraisons', livraisonRoutes);
 app.use('/api/bouteilles', bouteilleRoutes);
@@ -47,7 +50,5 @@ app.use('/api/translation', translationRoutes);
 app.use("/api/user", userRouter);
 app.use('/pdf_documents', express.static(path.join(__dirname, 'pdf_documents')));
 app.use("/images", express.static(path.join(__dirname, "images")));
-// Ajoutez cette ligne avec les autres app.use() statiques
-app.use("/audios", express.static(path.join(__dirname, "audios")));
 
 module.exports = app;
