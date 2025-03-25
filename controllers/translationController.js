@@ -5,12 +5,18 @@ const fs = require("fs");
 exports.creerTraduction = async (req, res) => {
     try {
         const { french, translations } = req.body;
-        const lang = Object.keys(JSON.parse(translations))[0];
+        const parsedTranslations = JSON.parse(translations);
+        const lang = Object.keys(parsedTranslations)[0];
         
+        // Vérifier que la traduction est bien une string
+        if (typeof parsedTranslations[lang] !== 'string') {
+            throw new Error('La traduction doit être une chaîne de caractères');
+        }
+
         const nouvelleTraduction = new Translation({
             french,
-            translations: JSON.parse(translations),
-            audioUrls: { [lang]: req.audioUrl } // Utilisez req.audioUrl ici
+            translations: parsedTranslations, // Doit être un objet simple {lang: "traduction"}
+            audioUrls: { [lang]: req.audioUrl }
         });
 
         await nouvelleTraduction.save();
@@ -18,7 +24,10 @@ exports.creerTraduction = async (req, res) => {
         
     } catch (error) {
         console.error(error);
-        res.status(500).json({ error: "Erreur lors de la création" });
+        res.status(500).json({ 
+            error: "Erreur lors de la création",
+            details: error.message 
+        });
     }
 };
 
