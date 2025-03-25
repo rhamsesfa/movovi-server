@@ -25,7 +25,7 @@ app.use((req, res, next) => {
 });
 
 // Database connection
-mongoose.connect("mongodb+srv://rhamsesfa:appo1993@cluster0.gkhis.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
+mongoose.connect("mongodb+srv://rhamsesfa:Appo1993i@cluster0.5wowfjx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
     useNewUrlParser: true,
     useUnifiedTopology: true, 
     autoIndex: true 

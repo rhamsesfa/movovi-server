@@ -26,13 +26,16 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         try {
-            const body = JSON.parse(JSON.stringify(req.body));
-            const lang = body.langue || Object.keys(JSON.parse(body.translations))[0] || 'unknown';
+            // Récupération de la langue depuis le corps de la requête
+            const body = req.body;
+            const translations = typeof body.translations === 'string' ? 
+                JSON.parse(body.translations) : body.translations;
+            const lang = body.langue || (translations ? Object.keys(translations)[0] : 'unknown');
             
             const originalName = path.parse(file.originalname).name.replace(/\s+/g, '_');
-            // Stocker temporairement avec l'extension originale
-            const tempName = `temp_${Date.now()}_${originalName}${path.extname(file.originalname)}`;
-            cb(null, tempName);
+            // Nom final directement en .mp3
+            const finalName = `${lang}_${Date.now()}_${originalName}.mp3`;
+            cb(null, finalName);
         } catch (err) {
             console.error("Erreur génération nom fichier:", err);
             cb(err);
@@ -54,7 +57,7 @@ const upload = multer({
 }).single("audio");
 
 module.exports = (req, res, next) => {
-    upload(req, res, (err) => {
+    upload(req, res, async (err) => {
         if (err) {
             return next(err);
         }
@@ -63,49 +66,41 @@ module.exports = (req, res, next) => {
             return next();
         }
 
-        const originalPath = req.file.path;
-        const originalExt = path.extname(originalPath);
-        const finalName = req.file.filename.replace('temp_', '').replace(originalExt, '.mp3');
-        const outputPath = path.join(path.dirname(originalPath), finalName);
+        const filePath = req.file.path;
+        const isMP3 = path.extname(filePath).toLowerCase() === '.mp3';
 
-        // Si le fichier est déjà en MP3, pas besoin de conversion
-        if (originalExt.toLowerCase() === '.mp3') {
-            // Renommer simplement le fichier (supprimer le préfixe temp_)
-            fs.rename(originalPath, outputPath, (renameErr) => {
-                if (renameErr) return next(renameErr);
+        // Si le fichier n'est pas déjà en MP3, le convertir
+        if (!isMP3) {
+            try {
+                const tempPath = filePath + '.tmp';
                 
-                req.file.path = outputPath;
-                req.file.filename = finalName;
-                next();
-            });
-            return;
+                await new Promise((resolve, reject) => {
+                    ffmpeg(filePath)
+                        .audioCodec('libmp3lame')
+                        .audioBitrate(128)
+                        .format('mp3')
+                        .on('end', resolve)
+                        .on('error', reject)
+                        .save(tempPath);
+                });
+
+                // Remplacer le fichier original par la version MP3
+                fs.unlinkSync(filePath);
+                fs.renameSync(tempPath, filePath);
+                
+                // Mettre à jour le type MIME
+                req.file.mimetype = 'audio/mpeg';
+
+            } catch (convertErr) {
+                console.error("Erreur conversion audio:", convertErr);
+                // Nettoyer les fichiers en cas d'erreur
+                if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+                return next(new Error("Échec de la conversion audio"));
+            }
         }
 
-        // Conversion en MP3
-        ffmpeg(originalPath)
-            .audioCodec('libmp3lame')
-            .audioBitrate(128)
-            .format('mp3')
-            .on('end', () => {
-                // Supprimer le fichier original
-                fs.unlink(originalPath, (unlinkErr) => {
-                    if (unlinkErr) console.error("Erreur suppression fichier original:", unlinkErr);
-                    
-                    // Mettre à jour les infos du fichier
-                    req.file.path = outputPath;
-                    req.file.mimetype = 'audio/mpeg';
-                    req.file.filename = finalName;
-                    
-                    next();
-                });
-            })
-            .on('error', (convertErr) => {
-                console.error("Erreur conversion audio:", convertErr);
-                // Supprimer le fichier original en cas d'erreur
-                fs.unlink(originalPath, () => {
-                    next(new Error("Échec de la conversion audio"));
-                });
-            })
-            .save(outputPath);
+        // Préparer l'URL audio pour le contrôleur
+        req.audioUrl = `/audios/${req.file.filename}`;
+        next();
     });
 };
