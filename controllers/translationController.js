@@ -1,31 +1,35 @@
 const Translation = require("../models/translation");
-const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+const path = require("path");
 
-// Modifier pour accepter FormData
 exports.creerTraduction = async (req, res) => {
-  try {
-    const { french, translations } = req.body;
-    const parsedTranslations = JSON.parse(translations);
-    
-    let audioUrls = {};
-    if (req.file) {
-      // Traiter le fichier audio ici
-      audioUrls[Object.keys(parsedTranslations)[0]] = `/audios/${req.file.filename}`;
+    try {
+        const { french, translations } = req.body;
+        let audioUrls = {};
+
+        if (req.file) {
+            const lang = Object.keys(JSON.parse(translations))[0];
+            audioUrls[lang] = `/audios/${req.file.filename}`;
+        }
+
+        const nouvelleTraduction = new Translation({
+            french,
+            translations: JSON.parse(translations),
+            audioUrls
+        });
+
+        const traduction = await nouvelleTraduction.save();
+        
+        res.status(201).json({
+            ...traduction._doc,
+            audioUrl: audioUrls[Object.keys(audioUrls)[0]] || null
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            error: "Erreur lors de la création de la traduction",
+            details: error.message 
+        });
     }
-
-    const nouvelleTraduction = new Translation({
-      french,
-      translations: parsedTranslations,
-      audioUrls
-    });
-
-    const traduction = await nouvelleTraduction.save();
-    res.status(201).json(traduction);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Erreur lors de la création de la traduction" });
-  }
 };
 
 // Lister toutes les traductions

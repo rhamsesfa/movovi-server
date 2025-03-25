@@ -1,41 +1,44 @@
 const multer = require("multer");
+const path = require("path");
 
-try {
-  // Définir les types MIME autorisés pour les fichiers audio
-  const MIME_TYPES = {
+// Créer le dossier audios s'il n'existe pas
+const audioDir = path.join(__dirname, '../audios');
+const fs = require('fs');
+if (!fs.existsSync(audioDir)) {
+    fs.mkdirSync(audioDir, { recursive: true });
+}
+
+const MIME_TYPES = {
     "audio/mpeg": "mp3",
     "audio/wav": "wav",
     "audio/ogg": "ogg",
     "audio/mp4": "mp4",
     "audio/aac": "aac",
-  };
+};
 
-  // Configuration du stockage avec multer
-  const storage = multer.diskStorage({
-    destination: (req, file, callback) => {
-      callback(null, "audios"); // Dossier où les fichiers audio seront stockés
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, audioDir);
     },
-    filename: (req, file, callback) => {
-      // Générer un nom de fichier unique
-      const name = file.originalname.split(" ").join("_"); // Remplacer les espaces par des underscores
-      const extension = MIME_TYPES[file.mimetype]; // Récupérer l'extension du fichier
-      const filename = name + "_" + Date.now() + "." + extension; // Ajouter un timestamp pour éviter les conflits de noms
-      callback(null, filename);
-    },
-  });
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = MIME_TYPES[file.mimetype] || 'audio';
+        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + extension);
+    }
+});
 
-  // Exporter la configuration multer pour gérer les fichiers audio
-  module.exports = multer({
+const fileFilter = (req, file, cb) => {
+    if (MIME_TYPES[file.mimetype]) {
+        cb(null, true);
+    } else {
+        cb(new Error('Type de fichier audio non supporté'), false);
+    }
+};
+
+module.exports = multer({
     storage: storage,
-    fileFilter: (req, file, callback) => {
-      // Vérifier si le type MIME du fichier est autorisé
-      if (MIME_TYPES[file.mimetype]) {
-        callback(null, true); // Accepter le fichier
-      } else {
-        callback(new Error("Type de fichier audio non supporté"), false); // Rejeter le fichier
-      }
-    },
-  }).single("audio"); // "audio" est le nom du champ dans le formulaire qui contient le fichier audio
-} catch (e) {
-  console.log(e);
-}
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 1024 * 1024 * 5 // 5MB max
+    }
+}).single("audio");
