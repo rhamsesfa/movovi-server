@@ -1,37 +1,51 @@
 const Translation = require("../models/translation");
 const path = require("path");
+const fs = require("fs");
 
 exports.creerTraduction = async (req, res) => {
     try {
-        const { french, translations, langue } = req.body;
-        
+        console.log("Fichier reçu:", req.file); // Debug
+        console.log("Corps:", req.body); // Debug
+
         if (!req.file) {
-            return res.status(400).json({ error: "Aucun fichier audio fourni" });
+            return res.status(400).json({ error: "Aucun fichier audio reçu" });
         }
 
+        const { french, translations } = req.body;
+        const lang = Object.keys(JSON.parse(translations))[0];
+        
         const audioUrl = `/audios/${req.file.filename}`;
-        const parsedTranslations = JSON.parse(translations);
+        const audioPath = path.join(__dirname, '../audios', req.file.filename);
+
+        // Vérification physique du fichier
+        if (!fs.existsSync(audioPath)) {
+            throw new Error(`Fichier non trouvé: ${audioPath}`);
+        }
 
         const nouvelleTraduction = new Translation({
             french,
-            translations: parsedTranslations,
-            audioUrls: { [langue]: audioUrl }
+            translations: JSON.parse(translations),
+            audioUrls: { [lang]: audioUrl }
         });
 
-        const traduction = await nouvelleTraduction.save();
+        await nouvelleTraduction.save();
         
         res.status(201).json({
-            message: "Traduction et audio enregistrés avec succès",
-            traduction,
-            audioUrl
+            message: "Enregistrement réussi",
+            audioUrl,
+            fileInfo: {
+                path: audioPath,
+                size: req.file.size,
+                saved: fs.existsSync(audioPath)
+            }
         });
 
     } catch (error) {
-        console.error("Erreur complète:", error);
+        console.error("ERREUR COMPLÈTE:", error);
         res.status(500).json({ 
-            error: "Erreur serveur",
-            details: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+            receivedFile: req.file || null
         });
     }
 };
