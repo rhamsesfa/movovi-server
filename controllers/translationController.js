@@ -7,35 +7,45 @@ exports.creerTraduction = async (req, res) => {
         const { french, translations } = req.body;
         const parsedTranslations = JSON.parse(translations);
         const lang = Object.keys(parsedTranslations)[0];
-        const translationText = parsedTranslations[lang].toLowerCase(); // Conversion en minuscules ici
+        const translationText = parsedTranslations[lang].toLowerCase();
 
-        // Vérifier que la traduction est bien une string
         if (typeof translationText !== 'string') {
             return res.status(400).json({ error: "La traduction doit être une chaîne de caractères" });
         }
 
-        // Convertir aussi le français en minuscules pour la cohérence
         const frenchLower = french.toLowerCase();
-
-        // 1. Vérifier si le mot français existe déjà
         const existingTranslation = await Translation.findOne({ french: frenchLower });
 
         if (existingTranslation) {
-            // 2. Vérifier si la traduction existe déjà pour cette langue
+            // Vérifier si la traduction existe déjà pour cette langue
             if (existingTranslation.translations.get(lang)) {
+                // Si un audio est fourni, l'ajouter au tableau existant
+                if (req.audioUrl) {
+                    const audioRecords = existingTranslation.audioUrls.get(lang) || [];
+                    audioRecords.push({
+                        user: req.userId, // Supposons que l'ID utilisateur est dans req.userId
+                        audio: req.audioUrl
+                    });
+                    existingTranslation.audioUrls.set(lang, audioRecords);
+                    await existingTranslation.save();
+                }
+
                 return res.status(409).json({ 
                     message: "Traduction existante",
                     existing: {
                         french: existingTranslation.french,
                         translation: existingTranslation.translations.get(lang),
-                        audioUrl: existingTranslation.audioUrls.get(lang)
+                        audioUrls: existingTranslation.audioUrls.get(lang)
                     }
                 });
             } else {
-                // 3. Ajouter la nouvelle traduction à l'entrée existante
+                // Ajouter la nouvelle traduction à l'entrée existante
                 existingTranslation.translations.set(lang, translationText);
                 if (req.audioUrl) {
-                    existingTranslation.audioUrls.set(lang, req.audioUrl);
+                    existingTranslation.audioUrls.set(lang, [{
+                        user: req.userId,
+                        audio: req.audioUrl
+                    }]);
                 }
                 
                 await existingTranslation.save();
@@ -45,11 +55,16 @@ exports.creerTraduction = async (req, res) => {
                 });
             }
         } else {
-            // 4. Créer une nouvelle entrée
+            // Créer une nouvelle entrée
             const nouvelleTraduction = new Translation({
-                french: frenchLower, // Stockage en minuscules
-                translations: { [lang]: translationText }, // Déjà en minuscules
-                audioUrls: { [lang]: req.audioUrl }
+                french: frenchLower,
+                translations: { [lang]: translationText },
+                audioUrls: req.audioUrl ? { 
+                    [lang]: [{
+                        user: req.userId,
+                        audio: req.audioUrl
+                    }] 
+                } : {}
             });
 
             await nouvelleTraduction.save();
@@ -131,7 +146,7 @@ exports.supprimerTraduction = async (req, res) => {
     res.status(500).json({ error: "Erreur lors de la suppression de la traduction" });
   }
 };
-// Récupérer les traductions pour un mot en français et une langue spécifique
+
 // Récupérer les traductions pour un mot en français et une langue spécifique
 exports.obtenirTraductionsParLangue = async (req, res) => {
   try {
@@ -141,11 +156,9 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
       return res.status(400).json({ error: "Le mot en français et la langue sont requis" });
     }
 
-    // Normaliser en minuscules et supprimer les espaces
     const frenchLower = french.toLowerCase().trim();
     const langueLower = langue.toLowerCase().trim();
 
-    // Recherche insensible à la casse
     const traduction = await Translation.findOne({ 
       french: { $regex: new RegExp(`^${frenchLower}$`, 'i') }
     });
@@ -157,14 +170,12 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
       });
     }
 
-    // Recherche de la traduction dans la langue spécifiée (insensible à la casse)
-    let traductionLangue, audioUrlLangue;
+    let traductionLangue, audioRecordsLangue;
     
-    // Parcourir les clés du Map pour trouver une correspondance insensible à la casse
     for (const [key, value] of traduction.translations) {
       if (key.toLowerCase() === langueLower) {
         traductionLangue = value;
-        audioUrlLangue = traduction.audioUrls.get(key); // Garde la clé originale
+        audioRecordsLangue = traduction.audioUrls.get(key); // Récupère tous les enregistrements audio
         break;
       }
     }
@@ -178,11 +189,10 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
       });
     }
 
-    // Renvoyer les données avec la casse originale stockée
     res.status(200).json({
-      french: traduction.french, // Conserve la casse originale du stockage
+      french: traduction.french,
       translation: traductionLangue,
-      audioUrl: audioUrlLangue,
+      audioRecords: audioRecordsLangue || [], // Retourne un tableau vide si aucun audio
       normalized: {
         french: frenchLower,
         language: langueLower
