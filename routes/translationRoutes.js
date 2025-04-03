@@ -6,6 +6,7 @@ const multerAudio = require("../middleware/multer-audio");
 
 // Routes pour les traductions
 router.post('/', 
+    auth,
     multerAudio, // Middleware Multer en premier
     (req, res, next) => {
         // Debug: Vérifiez si le fichier est bien reçu
