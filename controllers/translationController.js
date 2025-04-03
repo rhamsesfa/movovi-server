@@ -23,7 +23,7 @@ exports.creerTraduction = async (req, res) => {
                 if (req.audioUrl) {
                     const audioRecords = existingTranslation.audioUrls.get(lang) || [];
                     audioRecords.push({
-                        user: req.userId, // Supposons que l'ID utilisateur est dans req.userId
+                        user: req.auth.userId, // Utilisation de req.auth.userId
                         audio: req.audioUrl
                     });
                     existingTranslation.audioUrls.set(lang, audioRecords);
@@ -43,7 +43,7 @@ exports.creerTraduction = async (req, res) => {
                 existingTranslation.translations.set(lang, translationText);
                 if (req.audioUrl) {
                     existingTranslation.audioUrls.set(lang, [{
-                        user: req.userId,
+                        user: req.auth.userId, // Utilisation de req.auth.userId
                         audio: req.audioUrl
                     }]);
                 }
@@ -61,7 +61,7 @@ exports.creerTraduction = async (req, res) => {
                 translations: { [lang]: translationText },
                 audioUrls: req.audioUrl ? { 
                     [lang]: [{
-                        user: req.userId,
+                        user: req.auth.userId, // Utilisation de req.auth.userId
                         audio: req.audioUrl
                     }] 
                 } : {}
@@ -83,6 +83,7 @@ exports.creerTraduction = async (req, res) => {
     }
 };
 
+// [Les autres fonctions restent identiques, seul creerTraduction a été modifié pour req.auth.userId]
 // Lister toutes les traductions
 exports.listerTraductions = async (req, res) => {
   try {
@@ -175,7 +176,7 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     for (const [key, value] of traduction.translations) {
       if (key.toLowerCase() === langueLower) {
         traductionLangue = value;
-        audioRecordsLangue = traduction.audioUrls.get(key); // Récupère tous les enregistrements audio
+        audioRecordsLangue = traduction.audioUrls.get(key);
         break;
       }
     }
@@ -192,7 +193,7 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     res.status(200).json({
       french: traduction.french,
       translation: traductionLangue,
-      audioRecords: audioRecordsLangue || [], // Retourne un tableau vide si aucun audio
+      audioRecords: audioRecordsLangue || [],
       normalized: {
         french: frenchLower,
         language: langueLower
