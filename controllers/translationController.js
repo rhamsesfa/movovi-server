@@ -3,84 +3,93 @@ const path = require("path");
 const fs = require("fs");
 
 exports.creerTraduction = async (req, res) => {
-    try {
-        const { french, translations } = req.body;
-        const parsedTranslations = JSON.parse(translations);
-        const lang = Object.keys(parsedTranslations)[0];
-        const translationText = parsedTranslations[lang].toLowerCase();
+  try {
+    const { french, translations } = req.body;
+    const parsedTranslations = JSON.parse(translations);
+    const lang = Object.keys(parsedTranslations)[0];
+    const translationText = parsedTranslations[lang].toLowerCase();
 
-        if (typeof translationText !== 'string') {
-            return res.status(400).json({ error: "La traduction doit être une chaîne de caractères" });
-        }
-
-        const frenchLower = french.toLowerCase();
-        const existingTranslation = await Translation.findOne({ french: frenchLower });
-
-        if (existingTranslation) {
-            // Vérifier si la traduction existe déjà pour cette langue
-            if (existingTranslation.translations.get(lang)) {
-                // Si un audio est fourni, l'ajouter au tableau existant
-                if (req.audioUrl) {
-                    const audioRecords = existingTranslation.audioUrls.get(lang) || [];
-                    audioRecords.push({
-                        user: req.auth.userId, // Utilisation de req.auth.userId
-                        audio: req.audioUrl
-                    });
-                    existingTranslation.audioUrls.set(lang, audioRecords);
-                    await existingTranslation.save();
-                }
-
-                return res.status(409).json({ 
-                    message: "Traduction existante",
-                    existing: {
-                        french: existingTranslation.french,
-                        translation: existingTranslation.translations.get(lang),
-                        audioUrls: existingTranslation.audioUrls.get(lang)
-                    }
-                });
-            } else {
-                // Ajouter la nouvelle traduction à l'entrée existante
-                existingTranslation.translations.set(lang, translationText);
-                if (req.audioUrl) {
-                    existingTranslation.audioUrls.set(lang, [{
-                        user: req.auth.userId, // Utilisation de req.auth.userId
-                        audio: req.audioUrl
-                    }]);
-                }
-                
-                await existingTranslation.save();
-                return res.status(200).json({
-                    message: "Traduction ajoutée à l'entrée existante",
-                    translation: existingTranslation
-                });
-            }
-        } else {
-            // Créer une nouvelle entrée
-            const nouvelleTraduction = new Translation({
-                french: frenchLower,
-                translations: { [lang]: translationText },
-                audioUrls: req.audioUrl ? { 
-                    [lang]: [{
-                        user: req.auth.userId, // Utilisation de req.auth.userId
-                        audio: req.audioUrl
-                    }] 
-                } : {}
-            });
-
-            await nouvelleTraduction.save();
-            return res.status(201).json({
-                message: "Nouvelle traduction créée",
-                translation: nouvelleTraduction
-            });
-        }
-        
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ 
-            error: "Erreur lors de la création/mise à jour",
-            details: error.message 
-        });
+    if (typeof translationText !== "string") {
+      return res
+        .status(400)
+        .json({ error: "La traduction doit être une chaîne de caractères" });
     }
+
+    const frenchLower = french.toLowerCase();
+    const existingTranslation = await Translation.findOne({
+      french: frenchLower,
+    });
+
+    if (existingTranslation) {
+      // Vérifier si la traduction existe déjà pour cette langue
+      if (existingTranslation.translations.get(lang)) {
+        // Si un audio est fourni, l'ajouter au tableau existant
+        if (req.audioUrl) {
+          const audioRecords = existingTranslation.audioUrls.get(lang) || [];
+          audioRecords.push({
+            user: req.auth.userId, // Utilisation de req.auth.userId
+            audio: req.audioUrl,
+          });
+          existingTranslation.audioUrls.set(lang, audioRecords);
+          await existingTranslation.save();
+        }
+
+        return res.status(409).json({
+          message: "Traduction existante",
+          existing: {
+            french: existingTranslation.french,
+            translation: existingTranslation.translations.get(lang),
+            audioUrls: existingTranslation.audioUrls.get(lang),
+          },
+        });
+      } else {
+        // Ajouter la nouvelle traduction à l'entrée existante
+        existingTranslation.translations.set(lang, translationText);
+        if (req.audioUrl) {
+          existingTranslation.audioUrls.set(lang, [
+            {
+              user: req.auth.userId, // Utilisation de req.auth.userId
+              audio: req.audioUrl,
+            },
+          ]);
+        }
+
+        await existingTranslation.save();
+        return res.status(200).json({
+          message: "Traduction ajoutée à l'entrée existante",
+          translation: existingTranslation,
+        });
+      }
+    } else {
+      // Créer une nouvelle entrée
+      const nouvelleTraduction = new Translation({
+        french: frenchLower,
+        translations: { [lang]: translationText },
+        audioUrls: req.audioUrl
+          ? {
+              [lang]: [
+                {
+                  user: req.auth.userId, // Utilisation de req.auth.userId
+                  audio: req.audioUrl,
+                },
+              ],
+            }
+          : {},
+      });
+
+      await nouvelleTraduction.save();
+      return res.status(201).json({
+        message: "Nouvelle traduction créée",
+        translation: nouvelleTraduction,
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Erreur lors de la création/mise à jour",
+      details: error.message,
+    });
+  }
 };
 
 // [Les autres fonctions restent identiques, seul creerTraduction a été modifié pour req.auth.userId]
@@ -90,7 +99,9 @@ exports.listerTraductions = async (req, res) => {
     const traductions = await Translation.find();
     res.status(200).json(traductions);
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la récupération des traductions" });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des traductions" });
   }
 };
 
@@ -106,7 +117,9 @@ exports.obtenirTraductionParId = async (req, res) => {
 
     res.status(200).json(traduction);
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la récupération de la traduction" });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération de la traduction" });
   }
 };
 
@@ -127,7 +140,9 @@ exports.mettreAJourTraduction = async (req, res) => {
 
     res.status(200).json(traduction);
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la mise à jour de la traduction" });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la mise à jour de la traduction" });
   }
 };
 
@@ -144,7 +159,9 @@ exports.supprimerTraduction = async (req, res) => {
 
     res.status(200).json({ message: "Traduction supprimée avec succès" });
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la suppression de la traduction" });
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la suppression de la traduction" });
   }
 };
 
@@ -154,25 +171,27 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     const { french, langue } = req.body;
 
     if (!french || !langue) {
-      return res.status(400).json({ error: "Le mot en français et la langue sont requis" });
+      return res
+        .status(400)
+        .json({ error: "Le mot en français et la langue sont requis" });
     }
 
     const frenchLower = french.toLowerCase().trim();
     const langueLower = langue.toLowerCase().trim();
 
-    const traduction = await Translation.findOne({ 
-      french: { $regex: new RegExp(`^${frenchLower}$`, 'i') }
+    const traduction = await Translation.findOne({
+      french: { $regex: new RegExp(`^${frenchLower}$`, "i") },
     });
 
     if (!traduction) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: `Aucune traduction trouvée pour "${french}"`,
-        suggestion: `Essayez avec "${frenchLower}"` 
+        suggestion: `Essayez avec "${frenchLower}"`,
       });
     }
 
     let traductionLangue, audioRecordsLangue;
-    
+
     for (const [key, value] of traduction.translations) {
       if (key.toLowerCase() === langueLower) {
         traductionLangue = value;
@@ -182,11 +201,22 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     }
 
     if (!traductionLangue) {
-      const availableLanguages = Array.from(traduction.translations.keys()).join(', ');
-      return res.status(404).json({ 
+      const availableLanguages = Array.from(
+        traduction.translations.keys()
+      ).join(", ");
+      return res.status(404).json({
         error: `Aucune traduction trouvée pour la langue "${langue}"`,
         availableLanguages,
-        suggestion: `Langues disponibles: ${availableLanguages}` 
+        suggestion: `Langues disponibles: ${availableLanguages}`,
+      });
+    }
+
+    if (audioRecordsLangue) {
+      // Trier les prononciations par nombre de likes (du plus haut au plus bas)
+      audioRecordsLangue.sort((a, b) => {
+        const likesDiff = (b.likes?.length || 0) - (a.likes?.length || 0);
+        if (likesDiff !== 0) return likesDiff;
+        return new Date(a.createdAt) - new Date(b.createdAt);
       });
     }
 
@@ -196,64 +226,74 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
       audioRecords: audioRecordsLangue || [],
       normalized: {
         french: frenchLower,
-        language: langueLower
-      }
+        language: langueLower,
+      },
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Erreur lors de la récupération",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      details:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
 
 // Ajoutez cette fonction dans translationController.js
 exports.voterPrononciation = async (req, res) => {
-    try {
-        const { translationId, langue, audioIndex, voteType } = req.body;
-        const userId = req.auth.userId;
+  try {
+    const { translationId, langue, audioIndex, voteType } = req.body;
+    const userId = req.auth.userId;
 
-        const traduction = await Translation.findById(translationId);
-        if (!traduction) {
-            return res.status(404).json({ error: "Traduction non trouvée" });
-        }
-
-        const prononciations = traduction.audioUrls.get(langue);
-        if (!prononciations || !prononciations[audioIndex]) {
-            return res.status(404).json({ error: "Prononciation non trouvée" });
-        }
-
-        const prononciation = prononciations[audioIndex];
-
-        // Retirer le like/dislike existant de l'utilisateur
-        prononciation.likes = prononciation.likes.filter(id => id !== userId);
-        prononciation.dislikes = prononciation.dislikes.filter(id => id !== userId);
-
-        // Ajouter le nouveau vote
-        if (voteType === 'like') {
-            prononciation.likes.push(userId);
-        } else if (voteType === 'dislike') {
-            prononciation.dislikes.push(userId);
-        }
-
-        // Trier les prononciations par nombre de likes (du plus haut au plus bas)
-        prononciations.sort((a, b) => b.likes.length - a.likes.length);
-        traduction.audioUrls.set(langue, prononciations);
-
-        await traduction.save();
-
-        res.status(200).json({
-            message: "Vote enregistré",
-            likes: prononciation.likes.length,
-            dislikes: prononciation.dislikes.length
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ 
-            error: "Erreur lors de l'enregistrement du vote",
-            details: error.message 
-        });
+    const traduction = await Translation.findById(translationId);
+    if (!traduction) {
+      return res.status(404).json({ error: "Traduction non trouvée" });
     }
+
+    const prononciations = traduction.audioUrls.get(langue);
+    if (!prononciations || !prononciations[audioIndex]) {
+      return res.status(404).json({ error: "Prononciation non trouvée" });
+    }
+
+    const prononciation = prononciations[audioIndex];
+
+    // Retirer le like/dislike existant de l'utilisateur
+    prononciation.likes = prononciation.likes.filter((id) => id !== userId);
+    prononciation.dislikes = prononciation.dislikes.filter(
+      (id) => id !== userId
+    );
+
+    // Ajouter le nouveau vote
+    if (voteType === "like") {
+      prononciation.likes.push(userId);
+    } else if (voteType === "dislike") {
+      prononciation.dislikes.push(userId);
+    }
+
+    // Trier les prononciations par nombre de likes (du plus haut au plus bas)
+    prononciations.sort((a, b) => b.likes.length - a.likes.length);
+    traduction.audioUrls.set(langue, prononciations);
+
+    await traduction.save();
+
+    res.status(200).json({
+      message: "Vote enregistré",
+      likes: prononciation.likes.length,
+      dislikes: prononciation.dislikes.length,
+    });
+    // Après avoir sauvegardé la traduction
+    req.app.get('io').emit('voteUpdate', {
+        translationId,
+        langue,
+        audioIndex,
+        likes: prononciation.likes.length,
+        dislikes: prononciation.dislikes.length
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Erreur lors de l'enregistrement du vote",
+      details: error.message,
+    });
+  }
 };

@@ -21,5 +21,7 @@ router.get('/:id', auth, translationController.obtenirTraductionParId);
 router.put('/:id', auth, translationController.mettreAJourTraduction);
 router.delete('/:id', auth, translationController.supprimerTraduction);
 router.post('/langue/:langue', translationController.obtenirTraductionsParLangue);
+// vote des prononciation
+router.post('/vote', auth, translationController.voterPrononciation);
 
 module.exports = router;
