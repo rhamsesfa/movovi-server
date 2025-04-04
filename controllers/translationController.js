@@ -208,3 +208,52 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     });
   }
 };
+
+// Ajoutez cette fonction dans translationController.js
+exports.voterPrononciation = async (req, res) => {
+    try {
+        const { translationId, langue, audioIndex, voteType } = req.body;
+        const userId = req.auth.userId;
+
+        const traduction = await Translation.findById(translationId);
+        if (!traduction) {
+            return res.status(404).json({ error: "Traduction non trouvée" });
+        }
+
+        const prononciations = traduction.audioUrls.get(langue);
+        if (!prononciations || !prononciations[audioIndex]) {
+            return res.status(404).json({ error: "Prononciation non trouvée" });
+        }
+
+        const prononciation = prononciations[audioIndex];
+
+        // Retirer le like/dislike existant de l'utilisateur
+        prononciation.likes = prononciation.likes.filter(id => id !== userId);
+        prononciation.dislikes = prononciation.dislikes.filter(id => id !== userId);
+
+        // Ajouter le nouveau vote
+        if (voteType === 'like') {
+            prononciation.likes.push(userId);
+        } else if (voteType === 'dislike') {
+            prononciation.dislikes.push(userId);
+        }
+
+        // Trier les prononciations par nombre de likes (du plus haut au plus bas)
+        prononciations.sort((a, b) => b.likes.length - a.likes.length);
+        traduction.audioUrls.set(langue, prononciations);
+
+        await traduction.save();
+
+        res.status(200).json({
+            message: "Vote enregistré",
+            likes: prononciation.likes.length,
+            dislikes: prononciation.dislikes.length
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ 
+            error: "Erreur lors de l'enregistrement du vote",
+            details: error.message 
+        });
+    }
+};

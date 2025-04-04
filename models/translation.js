@@ -9,6 +9,18 @@ const AudioRecordSchema = new mongoose.Schema({
     audio: { 
         type: String, 
         required: true 
+    },
+    likes: {
+        type: [String], // Stocke les IDs des utilisateurs qui ont liké
+        default: []
+    },
+    dislikes: {
+        type: [String], // Stocke les IDs des utilisateurs qui ont disliké
+        default: []
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
     }
 });
 
@@ -16,16 +28,16 @@ const TranslationSchema = new mongoose.Schema({
     french: { 
         type: String, 
         required: true 
-    }, // Le mot ou l'expression en français
+    },
     translations: {
         type: Map,
-        of: String, // Chaque traduction sera une chaîne de caractères
+        of: String,
         required: true,
     },
     audioUrls: {
         type: Map,
-        of: [AudioRecordSchema], // Un tableau d'objets audio pour chaque langue
-        default: {} // Valeur par défaut un objet vide
+        of: [AudioRecordSchema],
+        default: {}
     },
 });
 
