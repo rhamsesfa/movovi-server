@@ -5,7 +5,12 @@ const app = require("./app");
 const server = http.createServer(app);
 
 const socketIo = require('socket.io');
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 io.use((socket, next) => {
     const token = socket.handshake.auth.token;
