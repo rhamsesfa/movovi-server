@@ -221,6 +221,7 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     }
 
     res.status(200).json({
+      _id : traduction._id,
       french: traduction.french,
       translation: traductionLangue,
       audioRecords: audioRecordsLangue || [],
