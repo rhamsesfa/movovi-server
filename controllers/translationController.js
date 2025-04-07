@@ -171,72 +171,106 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
     const { french, langue } = req.body;
 
     if (!french || !langue) {
-      return res
-        .status(400)
-        .json({ error: "Le mot en français et la langue sont requis" });
+      return res.status(400).json({ 
+        error: "Le mot en français et la langue sont requis" 
+      });
     }
 
-    const frenchLower = french.toLowerCase().trim();
     const langueLower = langue.toLowerCase().trim();
-    
-    console.log(frenchLower)
+    const frenchClean = french.trim();
 
-    const traduction = await Translation.findOne({
-      french: { $regex: new RegExp(`^${frenchLower}$`, "i") },
-    });
+    // Fonction interne pour créer une regex française
+    const createFrenchRegex = (text) => {
+      const accentMap = {
+        'a': '[aàáâãäå]',
+        'e': '[eèéêë]',
+        'i': '[iìíîï]',
+        'o': '[oòóôõö]',
+        'u': '[uùúûü]',
+        'c': '[cç]',
+        "'": "['’]?"
+      };
+      
+      let regexPattern = '';
+      for (let char of text.toLowerCase()) {
+        regexPattern += accentMap[char] || char.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      }
+      return new RegExp(`^${regexPattern}$`, 'i');
+    };
+
+    // 1. Recherche exacte avec gestion intelligente des accents/apostrophes
+    const exactRegex = createFrenchRegex(frenchClean);
+    let traduction = await Translation.findOne({ french: { $regex: exactRegex } });
+
+    // 2. Si non trouvé, recherche insensible aux accents
+    if (!traduction) {
+      const accentInsensitive = frenchClean
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/['’]/g, "['’]?");
+      
+      traduction = await Translation.findOne({
+        french: { $regex: new RegExp(`^${accentInsensitive}$`, "i") }
+      });
+    }
+
+    // 3. Si toujours non trouvé, recherche partielle
+    if (!traduction) {
+      const partialSearch = frenchClean
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9 ]/gi, '');
+      
+      traduction = await Translation.findOne({
+        french: { $regex: new RegExp(partialSearch, "i") }
+      });
+    }
 
     if (!traduction) {
       return res.status(404).json({
         error: `Aucune traduction trouvée pour "${french}"`,
-        suggestion: `Essayez avec "${frenchLower}"`,
+        suggestion: "Essayez une orthographe différente ou sans accents"
       });
     }
 
-    let traductionLangue, audioRecordsLangue;
-
-    for (const [key, value] of traduction.translations) {
-      if (key.toLowerCase() === langueLower) {
-        traductionLangue = value;
-        audioRecordsLangue = traduction.audioUrls.get(key);
-        break;
-      }
-    }
+    // Récupération de la traduction dans la langue demandée
+    let traductionLangue = traduction.translations.get(langueLower);
+    let audioRecordsLangue = traduction.audioUrls.get(langueLower);
 
     if (!traductionLangue) {
-      const availableLanguages = Array.from(
-        traduction.translations.keys()
-      ).join(", ");
+      const availableLanguages = Array.from(traduction.translations.keys()).join(", ");
       return res.status(404).json({
         error: `Aucune traduction trouvée pour la langue "${langue}"`,
         availableLanguages,
-        suggestion: `Langues disponibles: ${availableLanguages}`,
+        suggestion: `Langues disponibles: ${availableLanguages}`
       });
     }
 
+    // Tri des enregistrements audio par popularité
     if (audioRecordsLangue) {
-            audioRecordsLangue.sort((a, b) => {
-                const likesDiff = (b.likes?.length || 0) - (a.likes?.length || 0);
-                if (likesDiff !== 0) return likesDiff;
-                return new Date(a.createdAt) - new Date(b.createdAt);
-            });
-        }
+      audioRecordsLangue.sort((a, b) => {
+        const likesDiff = (b.likes?.length || 0) - (a.likes?.length || 0);
+        return likesDiff !== 0 ? likesDiff : new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    }
 
+    // Réponse finale
     res.status(200).json({
-      _id : traduction._id,
+      _id: traduction._id,
       french: traduction.french,
       translation: traductionLangue,
       audioRecords: audioRecordsLangue || [],
       normalized: {
-        french: frenchLower,
+        french: frenchClean.toLowerCase(),
         language: langueLower,
       },
     });
+
   } catch (error) {
-    console.error(error);
+    console.error("Erreur dans obtenirTraductionsParLangue:", error);
     res.status(500).json({
       error: "Erreur lors de la récupération",
-      details:
-        process.env.NODE_ENV === "development" ? error.message : undefined,
+      details: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
   }
 };
