@@ -1,10 +1,9 @@
-async function formatFrenchInput(req, res, next) {
-  try {
-    // Import dynamique corrigé
-    const { default: franc } = await import('franc-min');
-    // Plus besoin d'importer francToIso séparément
-    const { words: frenchWords } = await import('french-words');
+// formatFrenchInput.js
+const franc = require('franc-min');
+const frenchWords = require('french-words').words;
 
+module.exports = (req, res, next) => {
+  try {
     if (!req.body.french) return next();
 
     // 1. Nettoyage du texte
@@ -15,9 +14,9 @@ async function formatFrenchInput(req, res, next) {
       .trim()
       .toLowerCase();
 
-    // 2. Vérification langue (méthode alternative)
+    // 2. Vérification langue
     const langCode = franc(formatted);
-    if (langCode !== 'fra') { // 'fra' est le code pour le français dans franc-min
+    if (langCode !== 'fra') {
       return res.status(400).json({ 
         error: "Texte non français",
         detectedLanguage: langCode
@@ -40,12 +39,10 @@ async function formatFrenchInput(req, res, next) {
     req.body.french = formatted;
     next();
   } catch (error) {
-    console.error('Erreur dans formatFrenchInput:', error);
+    console.error('Erreur:', error);
     res.status(500).json({ 
       error: "Erreur de traitement",
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
-}
-
-module.exports = formatFrenchInput;
+};
