@@ -1,5 +1,5 @@
 // formatFrenchInput.js
-const franc = require('franc-min');
+const franc = require('franc');
 const frenchWords = require('french-words').words;
 
 module.exports = (req, res, next) => {
