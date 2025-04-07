@@ -178,6 +178,8 @@ exports.obtenirTraductionsParLangue = async (req, res) => {
 
     const frenchLower = french.toLowerCase().trim();
     const langueLower = langue.toLowerCase().trim();
+    
+    console.log(frenchLower)
 
     const traduction = await Translation.findOne({
       french: { $regex: new RegExp(`^${frenchLower}$`, "i") },
