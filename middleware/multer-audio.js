@@ -100,7 +100,7 @@ module.exports = (req, res, next) => {
                 });
             }
 
-            req.audioUrl = `/audios/${req.file.filename}`;
+            req.audioUrl = `https://gaz-owendo.glitch.me/audios/${req.file.filename}`;
             next();
         } catch (convertErr) {
             console.error("Erreur traitement audio:", convertErr);
