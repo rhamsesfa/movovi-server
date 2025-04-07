@@ -3,6 +3,7 @@ const router = express.Router();
 const translationController = require('../controllers/translationController');
 const auth = require("../middleware/auth");
 const multerAudio = require("../middleware/multer-audio"); 
+//const formatInput = require("../middleware/formatFrenchInput"); 
 
 // Routes pour les traductions
 router.post('/', 
