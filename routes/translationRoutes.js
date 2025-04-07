@@ -7,13 +7,18 @@ const formatInput = require("../middleware/formatFrenchInput");
 
 // Routes pour les traductions
 router.post('/',
-    formatInput, 
-    auth,
-    multerAudio, // Middleware Multer en premier
+    multerAudio, // Doit être en premier pour traiter le multipart/form-data
     (req, res, next) => {
-        // Debug: Vérifiez si le fichier est bien reçu
+        // Middleware de debug après Multer
         console.log("Fichier reçu:", req.file);
-        console.log("Corps de la requête:", req.body);
+        console.log("Corps de la requête avant formatage:", req.body);
+        next();
+    },
+    formatInput, // Formatage après que Multer ait extrait les données
+    auth,
+    (req, res, next) => {
+        // Debug après formatage
+        console.log("Corps de la requête après formatage:", req.body);
         next();
     },
     translationController.creerTraduction
