@@ -1,48 +1,28 @@
-// formatFrenchInput.js
-const franc = require('franc');
-const frenchWords = require('french-words').words;
-
+// formatFrenchInput.js - Middleware de formatage
 module.exports = (req, res, next) => {
-  try {
-    if (!req.body.french) return next();
+  if (!req.body.french) return next();
 
-    // 1. Nettoyage du texte
-    let formatted = req.body.french
-      .replace(/[^a-zA-ZÀ-ÿ0-9 '’-]/g, ' ')
-      .replace(/(\w)['’](\W|$)/g, '$1 $2')
+  try {
+    console.log(req.body.french)
+    // 1. Conservation du texte original
+    req.body.originalFrench = req.body.french;
+
+    // 2. Formatage intelligent
+    req.body.french = req.body.french
+      // Supprime les apostrophes en début/fin de mot
+      .replace(/(^| )['’]+/g, '$1')  // Début
+      .replace(/['’]+( |$)/g, '$1')  // Fin
+      // Garde les apostrophes au milieu des mots
+      .replace(/(\w)['’](\w)/g, '$1$2')  // Entre lettres
+      // Normalisation des espaces
       .replace(/\s+/g, ' ')
       .trim()
+      // Conserve la casse originale
       .toLowerCase();
 
-    // 2. Vérification langue
-    const langCode = franc(formatted);
-    if (langCode !== 'fra') {
-      return res.status(400).json({ 
-        error: "Texte non français",
-        detectedLanguage: langCode
-      });
-    }
-
-    // 3. Validation des mots
-    const invalidWords = formatted.split(' ').filter(word => 
-      word.length > 2 && !frenchWords.includes(word)
-    );
-
-    if (invalidWords.length > 0) {
-      return res.status(400).json({
-        error: "Mots français invalides détectés",
-        invalidWords,
-        suggestion: "Vérifiez l'orthographe"
-      });
-    }
-
-    req.body.french = formatted;
     next();
   } catch (error) {
-    console.error('Erreur:', error);
-    res.status(500).json({ 
-      error: "Erreur de traitement",
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
+    console.error('Erreur de formatage:', error);
+    next();
   }
 };

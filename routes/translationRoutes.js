@@ -3,10 +3,11 @@ const router = express.Router();
 const translationController = require('../controllers/translationController');
 const auth = require("../middleware/auth");
 const multerAudio = require("../middleware/multer-audio"); 
-//const formatInput = require("../middleware/formatFrenchInput"); 
+const formatInput = require("../middleware/formatFrenchInput"); 
 
 // Routes pour les traductions
-router.post('/', 
+router.post('/',
+    formatInput, 
     auth,
     multerAudio, // Middleware Multer en premier
     (req, res, next) => {
@@ -21,7 +22,7 @@ router.get('/', auth, translationController.listerTraductions);
 router.get('/:id', auth, translationController.obtenirTraductionParId);
 router.put('/:id', auth, translationController.mettreAJourTraduction);
 router.delete('/:id', auth, translationController.supprimerTraduction);
-router.post('/langue/:langue', translationController.obtenirTraductionsParLangue);
+router.post('/langue/:langue', formatInput, translationController.obtenirTraductionsParLangue);
 // vote des prononciation
 router.post('/vote', auth, translationController.voterPrononciation);
 
